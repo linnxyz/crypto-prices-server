@@ -1,8 +1,11 @@
 import express from 'express';
 import WebSocket from 'ws';
+import cors from 'cors'; // 👈 Add this
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.use(cors()); // 👈 Enable CORS for all origins
 
 let latestPrice = null;
 let startTime = null;
