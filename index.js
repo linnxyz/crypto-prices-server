@@ -1,9 +1,15 @@
+import express from 'express';
 import WebSocket from 'ws';
 
-const socket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
+let latestPrice = null;
 let startTime = null;
 let lastLoggedTime = 0;
+
+// --- WebSocket Setup ---
+const socket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
 
 socket.on('open', () => {
   startTime = Date.now();
@@ -31,8 +37,8 @@ socket.on('message', (data) => {
   const now = Date.now();
   if (now - lastLoggedTime >= 1000) {
     const trade = JSON.parse(data);
-    const price = trade.p;
-    console.log(`💰 BTC/USDT Price: $${price}`);
+    latestPrice = trade.p;
+    console.log(`💰 BTC/USDT Price: $${latestPrice}`);
     lastLoggedTime = now;
   }
 });
@@ -43,4 +49,22 @@ socket.on('close', () => {
 
 socket.on('error', (err) => {
   console.error('❗ WebSocket error:', err);
+});
+
+// --- API Routes ---
+app.get('/', (req, res) => {
+  res.send('🟢 Binance WebSocket API is live.');
+});
+
+app.get('/price', (req, res) => {
+  if (latestPrice) {
+    res.json({ price: latestPrice });
+  } else {
+    res.status(503).json({ error: 'Price data not ready yet.' });
+  }
+});
+
+// --- Start Express Server ---
+app.listen(PORT, () => {
+  console.log(`🚀 API running on http://localhost:${PORT}`);
 });
